@@ -1,20 +1,18 @@
-const ANIMAL_IMG = 'https://img.freepik.com/premium-psd/beautiful-chicken-transparent-background_888418-28247.jpg';
-const NUM = 30;
-const animals = [];
-let modelLoaded = false;
-let workerReady = false;
+import { animalTypes } from './settingsModal.js';
 
-// Setup Web Worker
+let ANIMALS = [];
+const animals = [];
+const NUM_DEFAULT = 20;
 const worker = new Worker('worker.js');
 worker.onmessage = e => {
   if (e.data.status !== undefined) {
     document.getElementById('status').innerText = `Обучение: ${e.data.status}%`;
   }
 };
-worker.postMessage({ type: 'init' });
 
 class Animal {
-  constructor() {
+  constructor(type) {
+    this.type = type;
     this.el = document.createElement('div');
     this.el.className = 'animal';
     this.size = 30 + Math.random() * 60;
@@ -22,20 +20,18 @@ class Animal {
     this.mass = this.size / 30;
 
     const img = document.createElement('img');
-    img.src = ANIMAL_IMG;
+    img.src = type.url;
     this.el.appendChild(img);
     document.body.appendChild(this.el);
 
     this.box = document.createElement('div');
-    this.box.style.position = 'absolute';
-    this.box.style.color = 'lime';
-    this.box.style.font = 'bold 12px monospace';
+    this.box.style = 'position:absolute;color:lime;font:bold 12px monospace';
     document.body.appendChild(this.box);
 
-    this.x = Math.random() * window.innerWidth;
-    this.y = Math.random() * window.innerHeight;
-    this.vx = (Math.random() - 0.5) * 0.5;
-    this.vy = (Math.random() - 0.5) * 0.5;
+    this.x = Math.random() * innerWidth;
+    this.y = Math.random() * innerHeight;
+    this.vx = (Math.random() - 0.5) * 0.5 * type.speed;
+    this.vy = (Math.random() - 0.5) * 0.5 * type.speed;
   }
 
   async update() {
@@ -43,38 +39,40 @@ class Animal {
     this.y += this.vy;
     this.el.style.transform = `translate(${this.x}px,${this.y}px)`;
 
-    if (modelLoaded && workerReady) {
-      const tensor = tf.browser.fromPixels(this.el)
-                     .resizeNearestNeighbor([64,64])
-                     .toFloat().div(255).expandDims();
-      const pred = await workerPredict(tensor);
-      const pct = Math.min(99, Math.round(pred * 100));
-      this.box.style.left = `${this.x + this.size}px`;
-      this.box.style.top = `${this.y}px`;
-      this.box.innerText = `${pct}%`;
-    }
+    const tensor = tf.browser.fromPixels(this.el).resizeNearestNeighbor([64,64])
+      .toFloat().div(255).expandDims();
+    const data = Array.from(tensor.dataSync());
+    worker.postMessage({type:'predict', data});
+    worker.onmessage = ev => {
+      if (ev.data.pred !== undefined) {
+        const pct = Math.min(99, Math.round(ev.data.pred * 100));
+        this.box.style.left = `${this.x + this.size}px`;
+        this.box.style.top = `${this.y}px`;
+        this.box.innerText = `${pct}%`;
+      }
+    };
   }
 }
 
-async function workerPredict(tensor) {
-  const data = Array.from(tensor.dataSync());
-  return new Promise(resolve => {
-    const msgId = Math.random();
-    worker.postMessage({ type: 'predict', data, id: msgId });
-    worker.onmessage = e => {
-      if (e.data.id === msgId) {
-        resolve(e.data.pred);
-      }
-    };
+function spawnAnimals() {
+  animals.forEach(a => { a.el.remove(); a.box.remove(); });
+  animals.length = 0;
+  animalTypes.forEach(type => {
+    for (let i = 0; i < type.count; i++) {
+      animals.push(new Animal(type));
+    }
   });
 }
 
 function animate() {
-  animals.forEach(a => a.update());
-  requestAnimationFrame(animate);
+  spawnAnimals();
+  (function loop() {
+    animals.forEach(a => a.update());
+    requestAnimationFrame(loop);
+  })();
 }
 
 window.onload = () => {
-  for (let i = 0; i < NUM; i++) animals.push(new Animal());
+  worker.postMessage({ type:'init' });
   animate();
 };

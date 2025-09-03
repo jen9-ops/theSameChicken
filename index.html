@@ -1,19 +1,34 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Animal Galaxy + ML</title>
+  <title>Animal Galaxy + ML + Settings</title>
   <style>
     body { margin:0; overflow:hidden; background:radial-gradient(ellipse at center,#000 0%,#111 100%); }
     .animal { position:absolute; transform-origin:center; will-change:transform; pointer-events:none; }
     .animal img { width:100%; height:100%; object-fit:contain; }
     #status { position:absolute; top:10px; left:10px; color:#0f0; font:bold 16px monospace; }
+    #settings-btn { position:absolute; top:10px; right:10px; padding:8px 12px; }
+    #modal { display:none; position:fixed; top:20%; left:50%; transform:translateX(-50%); background:#222; color:#fff; padding:20px; border-radius:8px; }
+    #modal input[type=text] { width:100%; margin:5px 0; }
+    #modal label { display:block; margin:10px 0 5px; }
+    #modal button { margin-top:10px; }
   </style>
 </head>
 <body>
+  <button id="settings-btn">Настройки</button>
   <div id="status">Обучение: 0%</div>
+  <div id="modal">
+    <h3>Настройки</h3>
+    <label>Добавить животное (URL картинки):</label>
+    <input type="text" id="animal-url">
+    <button id="add-animal-btn">Добавить</button>
+    <div id="sliders"></div>
+    <button id="close-modal">Закрыть</button>
+  </div>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+  <script src="settingsModal.js"></script>
   <script src="main.js"></script>
 </body>
 </html>

@@ -5,7 +5,7 @@ const addAnimalBtn = document.getElementById('add-animal-btn');
 const animalUrlInput = document.getElementById('animal-url');
 const slidersDiv = document.getElementById('sliders');
 
-const animalTypes = []; // {url, count, speed}
+const animalTypes = []; // Массив с информацией о типах животных
 
 settingsBtn.onclick = () => modal.style.display = 'block';
 closeBtn.onclick = () => modal.style.display = 'none';
@@ -13,21 +13,20 @@ closeBtn.onclick = () => modal.style.display = 'none';
 addAnimalBtn.onclick = () => {
   const url = animalUrlInput.value.trim();
   if (!url) return;
-  const type = { url, count: 5, speed: 1.0 };
-  animalTypes.push(type);
-  renderSliders();
+  animalTypes.push({ url, count: 5, speed: 1.0 });
   animalUrlInput.value = '';
+  renderSliders();
 };
 
 function renderSliders() {
   slidersDiv.innerHTML = '';
-  animalTypes.forEach((t, idx) => {
+  animalTypes.forEach((t, i) => {
     const container = document.createElement('div');
     const title = document.createElement('div');
-    title.innerText = `Животное #${idx+1}`;
+    title.innerText = `Животное #${i + 1}`;
     container.appendChild(title);
 
-    ['count','speed'].forEach(prop => {
+    ['count', 'speed'].forEach(prop => {
       const lbl = document.createElement('label');
       lbl.innerText = `${prop}: ${t[prop]}`;
       const slider = document.createElement('input');
@@ -36,10 +35,12 @@ function renderSliders() {
       slider.max = prop === 'count' ? 50 : 5;
       slider.step = prop === 'count' ? 1 : 0.1;
       slider.value = t[prop];
+
       slider.oninput = e => {
-        t[prop] = prop==='count' ? +e.target.value : +e.target.value;
+        t[prop] = prop === 'count' ? +e.target.value : +e.target.value;
         lbl.innerText = `${prop}: ${t[prop]}`;
       };
+
       container.appendChild(lbl);
       container.appendChild(slider);
     });

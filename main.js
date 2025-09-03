@@ -50,7 +50,7 @@ class Animal {
       const tensor = tf.browser.fromPixels(this.el).resizeNearestNeighbor([64,64])
         .toFloat().div(255).expandDims();
       const data = Array.from(tensor.dataSync());
-      worker.postMessage({type:'predict', data});
+      worker.postMessage({ type: 'predict', data });
       worker.onmessage = ev => {
         if (ev.data.pred !== undefined) {
           const pct = Math.min(99, Math.round(ev.data.pred * 100));
@@ -71,24 +71,20 @@ class Animal {
 function spawnAnimals() {
   animals.forEach(a => a.destroy());
   animals.length = 0;
-  animalTypes.forEach(type => {
-    for (let i = 0; i < type.count; i++) {
-      animals.push(new Animal(type));
-    }
-  });
+  animalTypes.forEach(type =>
+    Array.from({ length: type.count }).forEach(() => animals.push(new Animal(type)))
+  );
 }
 
 function animate() {
   spawnAnimals();
-  function loop() {
+  (function loop() {
     animals.forEach(a => a.update());
     requestAnimationFrame(loop);
-  }
-  loop();
+  })();
 }
 
-// === Созвездие ===
-
+//  Созвездия
 function spawnConstellation(type = 'big') {
   const count = 6;
   const centerX = Math.random() * window.innerWidth;
@@ -108,7 +104,6 @@ function spawnConstellation(type = 'big') {
   document.body.appendChild(label);
 
   const group = [];
-
   for (let i = 0; i < count; i++) {
     const angle = (i / count) * 2 * Math.PI;
     const x = centerX + radius * Math.cos(angle);
@@ -125,28 +120,22 @@ function spawnConstellation(type = 'big') {
     group.push(animal);
   }
 
-  // Эффект медленного исчезновения через 10 сек
   setTimeout(() => {
-    group.forEach((animal, i) => {
+    group.forEach((animal, i) =>
       setTimeout(() => {
         animal.el.style.transition = 'opacity 2s';
         animal.el.style.opacity = 0;
         animal.box.style.opacity = 0;
         setTimeout(() => animal.destroy(), 2000);
-      }, i * 200);
-    });
+      }, i * 200)
+    );
     label.remove();
   }, 10000);
 }
 
-// Запуск созвездия каждые 15 сек
-setInterval(() => {
-  const type = Math.random() > 0.5 ? 'big' : 'small';
-  spawnConstellation(type);
-}, 15000);
+setInterval(() => spawnConstellation(Math.random() > 0.5 ? 'big' : 'small'), 15000);
 
-// === Инициализация ===
 window.onload = () => {
-  worker.postMessage({ type:'init' });
+  worker.postMessage({ type: 'init' });
   animate();
 };
